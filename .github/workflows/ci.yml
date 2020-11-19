@@ -1,0 +1,93 @@
+name: CI Build
+
+on:
+  push:
+    branches: [develop]
+
+jobs:
+  package:
+    runs-on: ubuntu-latest
+    steps:
+    - name: Checkout 🛎️
+      uses: actions/checkout@v2
+      with:
+        submodules: true
+        token: ${{ secrets.TOKEN_GITHUB }}
+    - name: Setup .NET Core 🔧
+      uses: actions/setup-dotnet@v1
+      with:
+        dotnet-version: 3.1.101
+    - name: Build and Package 🔨
+      run: ./build.sh
+    - name: Upload package 📦
+      uses: actions/upload-artifact@v1
+      with:
+        name: Rebuild
+        path: Source/Service/bin/Release/netcoreapp3.1/Rebuild.zip
+      
+  deploy-to-qa:
+    runs-on: ubuntu-latest
+    needs: [package]
+    steps:
+    - name: Checkout 🛎️
+      uses: actions/checkout@v2
+      with:
+        submodules: true
+        token: ${{ secrets.TOKEN_GITHUB }}
+    - name: Download package 📦
+      uses: actions/download-artifact@v1
+      with:
+        path: Source/Service/bin/Release/netcoreapp3.1
+        name: Rebuild
+    - uses: actions/setup-node@v1
+      with:
+        node-version: '10.x'
+    - name: npm install 🔧
+      run: npm install
+    - name: npm install dependencies 🔧
+      run: npm i serverless-api-stage
+    - name: Serverless Deploy 🚀
+      uses: aaronpanch/action-serverless@v1.0.0
+      with:
+        args: deploy --stage QA --config qa.serverless.yml
+      env: 
+        AWS_ACCESS_KEY_ID: ${{ secrets.QA_SECRET_ID }}
+        AWS_SECRET_ACCESS_KEY: ${{ secrets.QA_SECRET_KEY }}
+    - name: Serverless Deploy 🚀
+      uses: aaronpanch/action-serverless@v1.0.0
+      with:
+        args: deploy --stage QA --config qa_authorizer.serverless.yml
+      env: 
+        AWS_ACCESS_KEY_ID: ${{ secrets.QA_SECRET_ID }}
+        AWS_SECRET_ACCESS_KEY: ${{ secrets.QA_SECRET_KEY }}    
+        
+  end-to-end-test:
+    runs-on: ubuntu-latest
+    needs: [deploy-to-qa]
+    steps:
+      - name: Set up Python 3.7 🐍
+        uses: actions/setup-python@v2
+        with:
+          python-version: '3.x'
+      - name: Install dependencies 🔧
+        run: |
+          python -m pip install --upgrade pip
+          pip install glasswall-aws-product-test-automation
+      - name: Run Tests 🧪
+        run: s93_test_automation --product "rebuild" --key_type "x_api_key" --endpoint "${{ secrets.QA_API_KEY_ENDPOINT }}" --jwt_token "${{ secrets.QA_JWT_TOKEN }}" --api_key "${{ secrets.QA_API_KEY}}" --x_api_key "${{ secrets.QA_API_KEY}}" --invalid_token "fgh"
+      - name: Run Tests 🧪
+        run: s93_test_automation --product "rebuild" --key_type "jwt_token" --endpoint "${{ secrets.QA_API_JWT_ENDPOINT }}" --jwt_token "${{ secrets.QA_JWT_TOKEN }}" --api_key "${{ secrets.QA_API_KEY}}" --x_api_key "${{ secrets.QA_API_KEY}}" --invalid_token "fgh" 
+        
+  merge-to-master:
+    runs-on: ubuntu-latest
+    needs: [end-to-end-test]
+    steps:
+      - name: Checkout 🛎️
+        uses: actions/checkout@master
+      - name: Merge to master branch 🔃
+        uses: devmasx/merge-branch@v1.1.0
+        with:
+          type: now
+          target_branch: master
+        env:
+          GITHUB_TOKEN: ${{secrets.TOKEN_GITHUB}}        
