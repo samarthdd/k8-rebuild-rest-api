@@ -44,7 +44,7 @@ namespace Glasswall.CloudSdk.AWS.Rebuild.Tests.RebuildControllerTests.RebuildFro
                     ErrorMessage = "banana has been removed because monkey content is set to disallowed"
                 });
 
-            _result = ClassInTest.RebuildFromFormFile(null, ValidFormFileMock.Object);
+            _result = (IActionResult)ClassInTest.RebuildFromFormFile(null, ValidFormFileMock.Object);
         }
 
         [Test]

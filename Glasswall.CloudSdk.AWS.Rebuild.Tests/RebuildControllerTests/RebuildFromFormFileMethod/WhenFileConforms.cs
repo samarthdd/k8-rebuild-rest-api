@@ -40,7 +40,7 @@ namespace Glasswall.CloudSdk.AWS.Rebuild.Tests.RebuildControllerTests.RebuildFro
                     ProtectedFile = ValidFileBytes
                 });
 
-            _result = ClassInTest.RebuildFromFormFile(null, ValidFormFileMock.Object);
+            _result = (IActionResult)ClassInTest.RebuildFromFormFile(null, ValidFormFileMock.Object);
         }
 
         [Test]

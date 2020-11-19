@@ -15,7 +15,7 @@ namespace Glasswall.CloudSdk.AWS.Rebuild.Tests.RebuildControllerTests.RebuildUrl
         private Uri _expectedOutputUrl;
 
         [OneTimeSetUp]
-        public void OnetimeSetup()
+        public async System.Threading.Tasks.Task OnetimeSetupAsync()
         {
             CommonSetup();
 
@@ -23,7 +23,7 @@ namespace Glasswall.CloudSdk.AWS.Rebuild.Tests.RebuildControllerTests.RebuildUrl
             _expectedOutputUrl = new Uri("https://www.s3bucket.com/buckets/rebuilt/myfile.png");
 
             ClassInTest.ModelState.AddModelError("SomeError", "SomeMessage");
-            _result = ClassInTest.RebuildUrlToUrl(new UrlToUrlRequest
+            _result = await ClassInTest.RebuildUrlToUrl(new UrlToUrlRequest
             {
                 InputGetUrl = _expectedInputUrl,
                 OutputPutUrl = _expectedOutputUrl

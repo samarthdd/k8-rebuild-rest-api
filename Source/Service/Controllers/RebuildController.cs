@@ -1,5 +1,6 @@
 using System;
 using System.ComponentModel.DataAnnotations;
+using System.Threading.Tasks;
 using Glasswall.CloudSdk.Common;
 using Glasswall.CloudSdk.Common.Web.Abstraction;
 using Glasswall.CloudSdk.Common.Web.Models;
@@ -31,7 +32,7 @@ namespace Glasswall.CloudSdk.AWS.Rebuild.Controllers
         }
 
         [HttpPost("file")]
-        public IActionResult RebuildFromFormFile([FromForm]string contentManagementFlagJson, [FromForm][Required]IFormFile file)
+        public async Task<IActionResult> RebuildFromFormFile([FromForm]string contentManagementFlagJson, [FromForm][Required]IFormFile file)
         {
             try
             {
@@ -39,7 +40,7 @@ namespace Glasswall.CloudSdk.AWS.Rebuild.Controllers
 
                 ContentManagementFlags contentManagementFlags = null;
                 if (!string.IsNullOrWhiteSpace(contentManagementFlagJson))
-                    contentManagementFlags = Newtonsoft.Json.JsonConvert.DeserializeObject<ContentManagementFlags>(contentManagementFlagJson);
+                    contentManagementFlags = await Task.Run(() => Newtonsoft.Json.JsonConvert.DeserializeObject<ContentManagementFlags>(contentManagementFlagJson));
 
                 if (!ModelState.IsValid)
                     return BadRequest(ModelState);
@@ -49,13 +50,13 @@ namespace Glasswall.CloudSdk.AWS.Rebuild.Controllers
 
                 RecordEngineVersion();
 
-                var fileType = DetectFromBytes(fileBytes);
+                var fileType = await Task.Run(() => DetectFromBytes(fileBytes));
 
                 if (fileType.FileType == FileType.Unknown)
                     return UnprocessableEntity("File could not be determined to be a supported file");
 
-                var protectedFileResponse = RebuildFromBytes(
-                    contentManagementFlags, fileType.FileTypeName, fileBytes);
+                var protectedFileResponse = await Task.Run(() => RebuildFromBytes(
+                    contentManagementFlags, fileType.FileTypeName, fileBytes)); 
 
                 if (!string.IsNullOrWhiteSpace(protectedFileResponse.ErrorMessage))
                 {
@@ -76,7 +77,7 @@ namespace Glasswall.CloudSdk.AWS.Rebuild.Controllers
         }
 
         [HttpPost("base64")]
-        public IActionResult RebuildFromBase64([FromBody][Required]Base64Request request)
+        public async Task<IActionResult> RebuildFromBase64([FromBody][Required]Base64Request request)
         {
             try
             {
@@ -90,13 +91,13 @@ namespace Glasswall.CloudSdk.AWS.Rebuild.Controllers
 
                 RecordEngineVersion();
 
-                var fileType = DetectFromBytes(file);
+                var fileType = await Task.Run(() => DetectFromBytes(file));
 
                 if (fileType.FileType == FileType.Unknown)
                     return UnprocessableEntity("File could not be determined to be a supported file");
 
-                var protectedFileResponse = RebuildFromBytes(
-                    request.ContentManagementFlags, fileType.FileTypeName, file);
+                var protectedFileResponse = await Task.Run(() => RebuildFromBytes(
+                    request.ContentManagementFlags, fileType.FileTypeName, file));
 
                 if (!string.IsNullOrWhiteSpace(protectedFileResponse.ErrorMessage))
                 {
@@ -117,7 +118,7 @@ namespace Glasswall.CloudSdk.AWS.Rebuild.Controllers
         }
         
         [HttpPost]
-        public IActionResult RebuildUrlToUrl([FromBody][Required] UrlToUrlRequest request)
+        public async Task<IActionResult> RebuildUrlToUrl([FromBody][Required] UrlToUrlRequest request)
         {
             try
             {
@@ -131,13 +132,13 @@ namespace Glasswall.CloudSdk.AWS.Rebuild.Controllers
 
                 RecordEngineVersion();
 
-                var fileType = DetectFromBytes(file);
+                var fileType = await Task.Run(() => DetectFromBytes(file));
 
                 if (fileType.FileType == FileType.Unknown)
                     return UnprocessableEntity("File could not be determined to be a supported file");
 
-                var protectedFileResponse = RebuildFromBytes(
-                    request.ContentManagementFlags, fileType.FileTypeName, file);
+                var protectedFileResponse = await Task.Run(() => RebuildFromBytes(
+                    request.ContentManagementFlags, fileType.FileTypeName, file));
 
                 if (!string.IsNullOrWhiteSpace(protectedFileResponse.ErrorMessage))
                 {

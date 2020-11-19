@@ -30,7 +30,7 @@ namespace Glasswall.CloudSdk.AWS.Rebuild.Tests.RebuildControllerTests.RebuildUrl
                 StatusCode = HttpStatusCode.InternalServerError
             });
 
-            _result = ClassInTest.RebuildUrlToUrl(new UrlToUrlRequest
+            _result = (IActionResult)ClassInTest.RebuildUrlToUrl(new UrlToUrlRequest
             {
                 InputGetUrl = _expectedInputUrl,
                 OutputPutUrl = _expectedOutputUrl

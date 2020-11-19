@@ -26,7 +26,7 @@ namespace Glasswall.CloudSdk.AWS.Rebuild.Tests.RebuildControllerTests.RebuildFro
             FileTypeDetectorMock.Setup(s => s.DetermineFileType(It.IsAny<byte[]>()))
                 .Returns(new FileTypeDetectionResponse(FileType.Unknown));
 
-            _result = ClassInTest.RebuildFromFormFile(null, ValidFormFileMock.Object);
+            _result = (IActionResult)ClassInTest.RebuildFromFormFile(null, ValidFormFileMock.Object);
         }
 
         [Test]

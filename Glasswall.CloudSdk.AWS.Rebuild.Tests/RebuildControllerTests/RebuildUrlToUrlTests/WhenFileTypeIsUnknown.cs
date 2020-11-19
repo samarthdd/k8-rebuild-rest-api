@@ -40,7 +40,7 @@ namespace Glasswall.CloudSdk.AWS.Rebuild.Tests.RebuildControllerTests.RebuildUrl
                 Content = new ByteArrayContent(ExpectedDownloadFile)
             });
 
-            _result = ClassInTest.RebuildUrlToUrl(new UrlToUrlRequest
+            _result = (IActionResult)ClassInTest.RebuildUrlToUrl(new UrlToUrlRequest
             {
                 InputGetUrl = _expectedInputUrl,
                 OutputPutUrl = _expectedOutputUrl

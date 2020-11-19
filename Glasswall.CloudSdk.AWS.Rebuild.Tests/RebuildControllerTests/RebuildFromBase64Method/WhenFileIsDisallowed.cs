@@ -44,7 +44,7 @@ namespace Glasswall.CloudSdk.AWS.Rebuild.Tests.RebuildControllerTests.RebuildFro
                     ErrorMessage = "banana has been removed because monkey content is set to disallowed"
                 });
 
-            _result = ClassInTest.RebuildFromBase64(new Base64Request
+            _result = (IActionResult)ClassInTest.RebuildFromBase64(new Base64Request
             {
                 Base64 = "dGVzdA=="
             });

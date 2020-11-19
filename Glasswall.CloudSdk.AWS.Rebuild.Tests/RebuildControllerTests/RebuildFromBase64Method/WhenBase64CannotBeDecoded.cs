@@ -22,7 +22,7 @@ namespace Glasswall.CloudSdk.AWS.Rebuild.Tests.RebuildControllerTests.RebuildFro
         [TestCaseSource(nameof(TestCaseSource))]
         public void Bad_Request_Is_Returned(string base64)
         {
-            _result = ClassInTest.RebuildFromBase64(new Base64Request
+            _result = (IActionResult)ClassInTest.RebuildFromBase64(new Base64Request
             {
                 Base64 = base64
             });
@@ -33,9 +33,9 @@ namespace Glasswall.CloudSdk.AWS.Rebuild.Tests.RebuildControllerTests.RebuildFro
 
         [Test]
         [TestCaseSource(nameof(TestCaseSource))]
-        public void Bad_Request_Contains_Message(string base64)
+        public async System.Threading.Tasks.Task Bad_Request_Contains_MessageAsync(string base64)
         {
-            _result = ClassInTest.RebuildFromBase64(new Base64Request
+            _result = await ClassInTest.RebuildFromBase64(new Base64Request
             {
                 Base64 = base64
             });
@@ -49,9 +49,9 @@ namespace Glasswall.CloudSdk.AWS.Rebuild.Tests.RebuildControllerTests.RebuildFro
 
         [Test]
         [TestCaseSource(nameof(TestCaseSource))]
-        public void Metrics_Are_Recorded(string base64)
+        public async System.Threading.Tasks.Task Metrics_Are_RecordedAsync(string base64)
         {
-            ClassInTest.RebuildFromBase64(new Base64Request
+            await ClassInTest.RebuildFromBase64(new Base64Request
             {
                 Base64 = base64
             });
@@ -73,9 +73,9 @@ namespace Glasswall.CloudSdk.AWS.Rebuild.Tests.RebuildControllerTests.RebuildFro
 
         [Test]
         [TestCaseSource(nameof(TestCaseSource))]
-        public void No_Engine_Actions_Are_Performed(string base64)
+        public async System.Threading.Tasks.Task No_Engine_Actions_Are_PerformedAsync(string base64)
         {
-            ClassInTest.RebuildFromBase64(new Base64Request
+            await ClassInTest.RebuildFromBase64(new Base64Request
             {
                 Base64 = base64
             });

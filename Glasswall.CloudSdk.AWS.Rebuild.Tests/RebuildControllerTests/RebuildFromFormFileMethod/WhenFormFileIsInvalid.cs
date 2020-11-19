@@ -17,13 +17,13 @@ namespace Glasswall.CloudSdk.AWS.Rebuild.Tests.RebuildControllerTests.RebuildFro
         {
             CommonSetup();
 
-            _result = ClassInTest.RebuildFromFormFile(null, InvalidFormFileMock.Object);
+            _result = (IActionResult)ClassInTest.RebuildFromFormFile(null, InvalidFormFileMock.Object);
         }
 
         [Test]
         public void Bad_Request_Is_Returned()
         {
-            _result = ClassInTest.RebuildFromFormFile(null, InvalidFormFileMock.Object);
+            _result = (IActionResult)ClassInTest.RebuildFromFormFile(null, InvalidFormFileMock.Object);
 
             Assert.That(_result, Is.Not.Null);
             Assert.That(_result, Is.TypeOf<BadRequestObjectResult>());
@@ -55,7 +55,7 @@ namespace Glasswall.CloudSdk.AWS.Rebuild.Tests.RebuildControllerTests.RebuildFro
         [Test]
         public void No_Engine_Actions_Are_Performed()
         {
-            _result = ClassInTest.RebuildFromFormFile(null, InvalidFormFileMock.Object);
+            _result = (IActionResult)ClassInTest.RebuildFromFormFile(null, InvalidFormFileMock.Object);
 
             GlasswallVersionServiceMock.VerifyNoOtherCalls();
             FileTypeDetectorMock.VerifyNoOtherCalls();

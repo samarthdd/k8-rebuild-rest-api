@@ -15,7 +15,7 @@ namespace Glasswall.CloudSdk.AWS.Rebuild.Tests.RebuildControllerTests.RebuildFro
 
             ClassInTest.ModelState.AddModelError("SomeError", "SomeMessage");
 
-            _result = ClassInTest.RebuildFromBase64(null);
+            _result = (IActionResult)ClassInTest.RebuildFromBase64(null);
         }
 
         [Test]

@@ -26,7 +26,7 @@ namespace Glasswall.CloudSdk.AWS.Rebuild.Tests.RebuildControllerTests.RebuildUrl
         private FileProtectResponse _expectedResponse;
 
         [OneTimeSetUp]
-        public void OnetimeSetup()
+        public async System.Threading.Tasks.Task OnetimeSetupAsync()
         {
             CommonSetup();
 
@@ -61,7 +61,7 @@ namespace Glasswall.CloudSdk.AWS.Rebuild.Tests.RebuildControllerTests.RebuildUrl
                     ErrorMessage = "Some error"
                 });
 
-            _result = ClassInTest.RebuildUrlToUrl(new UrlToUrlRequest
+            _result = await ClassInTest.RebuildUrlToUrl(new UrlToUrlRequest
             {
                 InputGetUrl = _expectedInputUrl,
                 OutputPutUrl = _expectedOutputUrl

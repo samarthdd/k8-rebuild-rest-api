@@ -22,7 +22,7 @@ namespace Glasswall.CloudSdk.AWS.Rebuild.Tests.RebuildControllerTests.RebuildFro
         private IActionResult _result;
 
         [OneTimeSetUp]
-        public void OnetimeSetup()
+        public async System.Threading.Tasks.Task OnetimeSetupAsync()
         {
             CommonSetup();
 
@@ -42,7 +42,7 @@ namespace Glasswall.CloudSdk.AWS.Rebuild.Tests.RebuildControllerTests.RebuildFro
                     ProtectedFile = ExpectedDecoded
                 });
 
-            _result = ClassInTest.RebuildFromBase64(new Base64Request
+            _result = await ClassInTest.RebuildFromBase64(new Base64Request
             {
                 Base64 = "dGVzdA=="
             });

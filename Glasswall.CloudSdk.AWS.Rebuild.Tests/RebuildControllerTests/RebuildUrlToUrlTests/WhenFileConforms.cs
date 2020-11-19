@@ -28,7 +28,7 @@ namespace Glasswall.CloudSdk.AWS.Rebuild.Tests.RebuildControllerTests.RebuildUrl
         private EntityTagHeaderValue _expectedEtag;
 
         [OneTimeSetUp]
-        public void OnetimeSetup()
+        public async System.Threading.Tasks.Task OnetimeSetupAsync()
         {
             CommonSetup();
 
@@ -66,7 +66,7 @@ namespace Glasswall.CloudSdk.AWS.Rebuild.Tests.RebuildControllerTests.RebuildUrl
                     ProtectedFile = ExpectedUploadFile
                 });
 
-            _result = ClassInTest.RebuildUrlToUrl(new UrlToUrlRequest
+            _result = await ClassInTest.RebuildUrlToUrl(new UrlToUrlRequest
             {
                 InputGetUrl = _expectedInputUrl,
                 OutputPutUrl = _expectedOutputUrl

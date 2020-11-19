@@ -62,7 +62,7 @@ namespace Glasswall.CloudSdk.AWS.Rebuild.Tests.RebuildControllerTests.RebuildUrl
                     ErrorMessage = "banana has been removed because monkey content is set to disallowed"
                 });
 
-            _result = ClassInTest.RebuildUrlToUrl(new UrlToUrlRequest
+            _result = (IActionResult)ClassInTest.RebuildUrlToUrl(new UrlToUrlRequest
             {
                 InputGetUrl = _expectedInputUrl,
                 OutputPutUrl = _expectedOutputUrl

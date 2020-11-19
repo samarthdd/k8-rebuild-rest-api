@@ -15,7 +15,7 @@ namespace Glasswall.CloudSdk.AWS.Rebuild.Tests.RebuildControllerTests.RebuildFro
 
             ClassInTest.ModelState.AddModelError("SomeError", "SomeMessage");
 
-            _result = ClassInTest.RebuildFromFormFile(null, InvalidFormFileMock.Object);
+            _result = (IActionResult)ClassInTest.RebuildFromFormFile(null, InvalidFormFileMock.Object);
         }
 
         [Test]
