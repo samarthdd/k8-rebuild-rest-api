@@ -16,7 +16,7 @@ This endpoint allows a client service to send a unprotected file using Multipart
 - The file is protected with the default content management flags for the file type.
 - Protected file is returned
 
-# Two ways deploy this
+# Two ways to deploy this
 ### 1. Without docker
 - Install the dotnet runtime on linux using this command:
 `sudo apt-get update; \
