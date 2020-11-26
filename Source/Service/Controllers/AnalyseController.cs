@@ -1,4 +1,5 @@
 using System;
+using System.Threading.Tasks;
 using Glasswall.CloudSdk.Common;
 using Glasswall.CloudSdk.Common.Web.Abstraction;
 using Glasswall.CloudSdk.Common.Web.Models;
@@ -29,7 +30,7 @@ namespace Glasswall.CloudSdk.AWS.Analyse.Controllers
         }
 
         [HttpPost("base64")]
-        public IActionResult AnalyseFromBase64([FromBody]Base64Request request)
+        public async Task<IActionResult> AnalyseFromBase64([FromBody]Base64Request request)
         {
             try
             {
@@ -41,14 +42,14 @@ namespace Glasswall.CloudSdk.AWS.Analyse.Controllers
                 if (!TryGetBase64File(request.Base64, out var file))
                     return BadRequest("Input file could not be decoded from base64.");
 
-                RecordEngineVersion();
+                await Task.Run(() => RecordEngineVersion());
 
-                var fileType = DetectFromBytes(file);
+                var fileType = await Task.Run(() => DetectFromBytes(file));
 
                 if (fileType.FileType == FileType.Unknown)
                     return UnprocessableEntity("File could not be determined to be a supported file");
 
-                var xmlReport = AnalyseFromBytes(request.ContentManagementFlags, fileType.FileTypeName, file);
+                var xmlReport = await Task.Run(() => AnalyseFromBytes(request.ContentManagementFlags, fileType.FileTypeName, file));
 
                 if (string.IsNullOrWhiteSpace(xmlReport))
                     return UnprocessableEntity("No report could be generated for file.");
@@ -63,7 +64,7 @@ namespace Glasswall.CloudSdk.AWS.Analyse.Controllers
         }
 
         [HttpPost("url")]
-        public IActionResult AnalyseFromUrl([FromBody] UrlRequest request)
+        public async Task<IActionResult> AnalyseFromUrl([FromBody] UrlRequest request)
         {
             try
             {
@@ -75,14 +76,14 @@ namespace Glasswall.CloudSdk.AWS.Analyse.Controllers
                 if (!TryGetFile(request.InputGetUrl, out var file))
                     return BadRequest("Input file could not be downloaded.");
 
-                RecordEngineVersion();
+                await Task.Run(() => RecordEngineVersion());
 
-                var fileType = DetectFromBytes(file);
+                var fileType = await Task.Run(() => DetectFromBytes(file));
 
                 if (fileType.FileType == FileType.Unknown)
                     return UnprocessableEntity("File could not be determined to be a supported file");
 
-                var xmlReport = AnalyseFromBytes(request.ContentManagementFlags, fileType.FileTypeName, file);
+                var xmlReport = await Task.Run(() => AnalyseFromBytes(request.ContentManagementFlags, fileType.FileTypeName, file));
 
                 if (string.IsNullOrWhiteSpace(xmlReport))
                     return UnprocessableEntity("No report could be generated for file.");
