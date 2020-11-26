@@ -17,6 +17,12 @@ namespace Glasswall.CloudSdk.AWS.Common.Web
 
         public virtual void ConfigureServices(IServiceCollection services)
         {
+            services.AddCors(o => o.AddPolicy("MyPolicy", builder =>
+            {
+                builder.AllowAnyOrigin()
+                       .AllowAnyMethod()
+                       .AllowAnyHeader();
+            }));
             services.AddControllers();
             services.AddLogging();
 
@@ -25,6 +31,7 @@ namespace Glasswall.CloudSdk.AWS.Common.Web
 
         public virtual void Configure(IApplicationBuilder app, IWebHostEnvironment env)
         {
+            app.UseCors("MyPolicy");
             if (env.IsDevelopment())
             {
                 app.UseDeveloperExceptionPage();
