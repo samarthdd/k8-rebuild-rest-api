@@ -22,13 +22,13 @@ namespace Glasswall.CloudSdk.AWS.Rebuild
         public Startup(IConfiguration configuration) : base(configuration)
         {
         }
-
         protected override void ConfigureAdditionalServices(IServiceCollection services)
         {
             services.AddSingleton<IMetricService, MetricService>();
             services.AddSingleton<IGlasswallVersionService, GlasswallVersionService>();
             services.AddSingleton<IFileTypeDetector, FileTypeDetector>();
             services.AddSingleton<IFileProtector, FileProtector>();
+            services.AddSingleton<IFileAnalyser, FileAnalyser>();
             services.AddSingleton<IAdaptor<ContentManagementFlags, string>, GlasswallConfigurationAdaptor>();
             services.AddSingleton<IHttpContextAccessor, HttpContextAccessor>();
 
@@ -46,6 +46,7 @@ namespace Glasswall.CloudSdk.AWS.Rebuild
 
         protected override void ConfigureAdditional(IApplicationBuilder app, IWebHostEnvironment env)
         {
+            
         }
     }
 }
