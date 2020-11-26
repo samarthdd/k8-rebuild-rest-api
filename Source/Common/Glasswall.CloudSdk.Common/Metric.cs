@@ -12,5 +12,6 @@ namespace Glasswall.CloudSdk.Common
         public const string UploadSize = "gw-metric-uploadsize";
         public const string UploadTime = "gw-metric-upload";
         public const string UploadEtag = "gw-put-file-etag";
+        public const string AnalyseTime = "gw-metric-analyse";
     }
 }
