@@ -18,9 +18,9 @@ This endpoint allows a client service to send a unprotected file using Multipart
 - The file is protected with the default content management flags for the file type.
 - Protected file is returned
 
-# Two ways to deploy this
+# Deployments
 
-### 1. Without docker
+## Without docker
 
 - Install the dotnet runtime on linux using this command:
   `sudo apt-get update; \ sudo apt-get install -y apt-transport-https && \ sudo apt-get update && \ sudo apt-get install -y aspnetcore-runtime-5.0`
@@ -29,12 +29,16 @@ This endpoint allows a client service to send a unprotected file using Multipart
   `dotnet run`
   you will see the project is running and it will show you the base url with port number where api's is running something like this: `https://localhost:5001`
 
-## 2. With docker
+## With docker
 
 - In this path `/source/service` you will see the docker file which you can use to build the image and run the project.
 - You can also refer to this url on how to build and run a docker image https://docs.docker.com/engine/examples/dotnetcore/#build-and-run-the-docker-image
 
-## Video demo:
+## Helm
+
+Read [here](chart/README.md)
+
+# Video demo:
 
 - https://www.loom.com/share/17df8fa04d634ca69cfa04b7b3d2a96b
 
