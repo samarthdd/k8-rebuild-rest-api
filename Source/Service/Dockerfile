@@ -21,7 +21,7 @@ COPY ["Source/Common/Glasswall.Core.Engine.Messaging/Glasswall.Core.Engine.Messa
 COPY ["Source/Common/Glasswall.Core.Engine/Glasswall.Core.Engine.csproj", "Source/Common/Glasswall.Core.Engine/"]
 RUN dotnet restore "Source/Service/Glasswall.CloudSdk.AWS.Rebuild.csproj"
 COPY . .
-RUN git submodule update --init --recursive
+RUN git submodule update --init --recursive || true
 WORKDIR "/src/Source/Service"
 RUN dotnet build "Glasswall.CloudSdk.AWS.Rebuild.csproj" -c Release -o /app/build
 
