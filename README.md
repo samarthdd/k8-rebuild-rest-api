@@ -1,13 +1,13 @@
 # K8 Rebuild REST API
 ## Setup
-- clone the repo 
+- clone the repo    
     `git clone https://github.com/k8-proxy/k8-rebuild-rest-api.git`
-- update modules 
+- update modules    
     `git submodule update --init`
 
 
 ## Endpoints
-- Endpoint
+- Endpoint  
     `/api/rebuild/file`
 - This endpoint allows a client service to send a unprotected file using multipart form upload and returns a protected file as an output.
 - This endpoint does the following:
@@ -23,7 +23,7 @@
 There are 2 ways to deploy K8 Rebuild Rest API; docker and runtime. Below are instructions for both docker and runtime deployments.
 
 ### Docker Deployment
-- Change your directory 
+- Change your directory     
     `cd k8-rebuild-rest-api`
 - Build and run the docker image
     ```
@@ -53,7 +53,7 @@ There are 2 ways to deploy K8 Rebuild Rest API; docker and runtime. Below are in
         sudo apt-get install -y aspnetcore-runtime-3.1
         ```
     - Please check [supported distributions](https://docs.microsoft.com/en-us/dotnet/core/install/linux-ubuntu#install-the-runtime) of .NET on ubuntu.
-- Change directory 
+- Change directory  
     `cd k8-rebuild-rest-api.git/Source/Service`
 - Run   
     `dotnet run`
