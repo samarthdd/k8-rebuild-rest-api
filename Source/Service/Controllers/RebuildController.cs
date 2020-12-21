@@ -1,5 +1,7 @@
 using System;
 using System.ComponentModel.DataAnnotations;
+using System.IO;
+using System.IO.Compression;
 using System.Threading.Tasks;
 using Glasswall.CloudSdk.Common;
 using Glasswall.CloudSdk.Common.Web.Abstraction;
@@ -7,6 +9,7 @@ using Glasswall.CloudSdk.Common.Web.Models;
 using Glasswall.Core.Engine.Common.FileProcessing;
 using Glasswall.Core.Engine.Common.PolicyConfig;
 using Glasswall.Core.Engine.Messaging;
+using Microsoft.AspNetCore.Hosting;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.Logging;
@@ -18,17 +21,20 @@ namespace Glasswall.CloudSdk.AWS.Rebuild.Controllers
         private readonly IGlasswallVersionService _glasswallVersionService;
         private readonly IFileTypeDetector _fileTypeDetector;
         private readonly IFileProtector _fileProtector;
+        private readonly IWebHostEnvironment _hostingEnvironment;
 
         public RebuildController(
             IGlasswallVersionService glasswallVersionService,
             IFileTypeDetector fileTypeDetector,
             IFileProtector fileProtector,
             IMetricService metricService,
-            ILogger<RebuildController> logger) : base(logger, metricService)
+            ILogger<RebuildController> logger,
+            IWebHostEnvironment hostingEnvironment) : base(logger, metricService)
         {
             _glasswallVersionService = glasswallVersionService ?? throw new ArgumentNullException(nameof(glasswallVersionService));
             _fileTypeDetector = fileTypeDetector ?? throw new ArgumentNullException(nameof(fileTypeDetector));
             _fileProtector = fileProtector ?? throw new ArgumentNullException(nameof(fileProtector));
+            _hostingEnvironment = hostingEnvironment ?? throw new ArgumentNullException(nameof(hostingEnvironment));
         }
 
         [HttpPost("file")]
@@ -68,6 +74,97 @@ namespace Glasswall.CloudSdk.AWS.Rebuild.Controllers
                 }
 
                 return new FileContentResult(protectedFileResponse.ProtectedFile, "application/octet-stream") { FileDownloadName = file.FileName ?? "Unknown" };
+            }
+            catch (Exception e)
+            {
+                Logger.LogError(e, $"Exception occured processing file: {e.Message}");
+                throw;
+            }
+        }
+
+        [HttpPost("zipfile")]
+        public async Task<IActionResult> RebuildFromFormZipFile([FromForm] string contentManagementFlagJson, [FromForm][Required] IFormFile file)
+        {
+            try
+            {
+                Logger.LogInformation("'{0}' method invoked", nameof(RebuildFromFormZipFile));
+
+                ContentManagementFlags contentManagementFlags = null;
+                if (!string.IsNullOrWhiteSpace(contentManagementFlagJson))
+                    contentManagementFlags = await Task.Run(() => Newtonsoft.Json.JsonConvert.DeserializeObject<ContentManagementFlags>(contentManagementFlagJson));
+
+                if (!ModelState.IsValid)
+                    return BadRequest(ModelState);
+
+                if (!TryReadFormFile(file, out var fileBytes))
+                    return BadRequest("Input file could not be read.");
+
+                RecordEngineVersion();
+
+                FileTypeDetectionResponse fileType = await Task.Run(() => DetectFromBytes(fileBytes));
+
+                if (fileType.FileType != FileType.Zip)
+                    return UnprocessableEntity("Input file could not be processed.");
+
+                string zipFolderName = $"{Guid.NewGuid()}";
+                string uploads = Path.Combine(_hostingEnvironment.ContentRootPath, "uploads");
+                string tempFolderPath = Path.Combine(uploads, Guid.NewGuid().ToString());
+                string protectedZipFolderPath = Path.Combine(tempFolderPath, Guid.NewGuid().ToString());
+                string zipFolderPath = Path.Combine(tempFolderPath, zipFolderName);
+                string zipFilePath = $"{zipFolderPath}.{fileType.FileTypeName}";
+                if (!Directory.Exists(uploads))
+                {
+                    Directory.CreateDirectory(uploads);
+                }
+
+                if (!Directory.Exists(tempFolderPath))
+                {
+                    Directory.CreateDirectory(tempFolderPath);
+                }
+
+                if (!Directory.Exists(protectedZipFolderPath))
+                {
+                    Directory.CreateDirectory(protectedZipFolderPath);
+                }
+
+                using (Stream fileStream = new FileStream(zipFilePath, FileMode.Create))
+                {
+                    await file.CopyToAsync(fileStream);
+                }
+
+                ZipFile.ExtractToDirectory(zipFilePath, zipFolderPath, true);
+                foreach (var extractedFile in Directory.GetFiles(zipFolderPath))
+                {
+                    using FileStream stream = System.IO.File.OpenRead(extractedFile);
+                    IFormFile iFormFile = new FormFile(stream, 0, stream.Length, null, Path.GetFileName(stream.Name));
+
+                    if (!TryReadFormFile(iFormFile, out fileBytes))
+                        return BadRequest("Input file could not be read.");
+
+                    fileType = await Task.Run(() => DetectFromBytes(fileBytes));
+
+                    if (fileType.FileType == FileType.Unknown)
+                        return UnprocessableEntity("Input file could not be processed.");
+
+                    IFileProtectResponse protectedFileResponse = await Task.Run(() => RebuildFromBytes(
+                    contentManagementFlags, fileType.FileTypeName, fileBytes));
+
+                    if (!string.IsNullOrWhiteSpace(protectedFileResponse.ErrorMessage))
+                    {
+                        if (protectedFileResponse.IsDisallowed)
+                            return Ok(protectedFileResponse);
+
+                        return UnprocessableEntity(
+                            $"File could not be rebuilt. Error Message: {protectedFileResponse.ErrorMessage}");
+                    }
+
+                    System.IO.File.WriteAllBytes(Path.Combine(protectedZipFolderPath, Path.GetFileName(extractedFile)), protectedFileResponse.ProtectedFile);
+                }
+
+                ZipFile.CreateFromDirectory(protectedZipFolderPath, $"{protectedZipFolderPath}.{FileType.Zip}");
+                byte[] protectedZipBytes = System.IO.File.ReadAllBytes($"{protectedZipFolderPath}.{FileType.Zip}");
+                Directory.Delete(tempFolderPath, true);
+                return new FileContentResult(protectedZipBytes, "application/octet-stream") { FileDownloadName = file.FileName ?? "Unknown" };
             }
             catch (Exception e)
             {
