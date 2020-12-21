@@ -1,59 +1,68 @@
-# Pre-requisites
+# K8 Rebuild REST API
+## Setup
+- clone the repo 
+    `git clone https://github.com/k8-proxy/k8-rebuild-rest-api.git`
+- update modules 
+    `git submodule update --init`
 
-- Update the submodules using this command `git submodule update --init`
 
-# Endpoints
+## Endpoints
+- Endpoint
+    `/api/rebuild/file`
+- This endpoint allows a client service to send a unprotected file using multipart form upload and returns a protected file as an output.
+- This endpoint does the following:
+    - Receives the file as mutlipart bytes array and rebuilds it.
+        - If it is unsuccessful, it returns `BAD REQUEST` 
+        - If it is successful, it will send the file to the core engine.
+    - File name is extracted from the URL.
+    - The core engine will then try and determine the file type.
+    - The file is rebuilt with the default content management flags for the file type.
+    - Protected file is returned.
 
-## /api/rebuild/file
+## Deployment
+There are 2 ways to deploy K8 Rebuild Rest API; docker and runtime. Below are instructions for both docker and runtime deployments.
 
-This endpoint allows a client service to send a unprotected file using Multipart form upload method and returns a protected file in response.
+### Docker Deployment
+- Change your directory 
+    `cd k8-rebuild-rest-api`
+- Build and run the docker image
+    ```
+    docker build -t sow-rest-api --file Source/Service/Dockerfile .
+    docker run -it --rm -p 80:80 sow-rest-api
+    ```
+### Runtime Deployment
+- Install the ASP.NET Core Runtime
+    
+    - On **Ubuntu 20.04 (LTS)**
+        ```
+        wget https://packages.microsoft.com/config/ubuntu/20.04/packages-microsoft-prod.deb -O packages-microsoft-prod.deb
+        sudo dpkg -i packages-microsoft-prod.deb
+        ```
+    - Install the SDK
+        ```
+        sudo apt-get update; \
+        sudo apt-get install -y apt-transport-https && \
+        sudo apt-get update && \
+        sudo apt-get install -y dotnet-sdk-5.0
+        ```
+    - Install the runtime
+        ```
+        sudo apt-get update; \
+        sudo apt-get install -y apt-transport-https && \
+        sudo apt-get update && \
+        sudo apt-get install -y aspnetcore-runtime-3.1
+        ```
+    - Please check [supported distributions](https://docs.microsoft.com/en-us/dotnet/core/install/linux-ubuntu#install-the-runtime) of .NET on ubuntu.
+- Change directory 
+    `cd k8-rebuild-rest-api.git/Source/Service`
+- Run   
+    `dotnet run`
 
-##This endpoint does the following:
+## Helm Chart
+You can see the helm chart [here](https://github.com/k8-proxy/k8-rebuild-rest-api/blob/main/chart/README.md).
 
-- Receives the file as mutlipart bytes array and rebuilds it.
-- If it is unsuccessful it returns BAD REQUEST
-- If it is successful then it will send the file to the core engine.
-- File name is extracted from the URL.
-- The core engine will then try and determine the file type
-- The file is protected with the default content management flags for the file type.
-- Protected file is returned
 
-# Deployments
+# Video Demo
 
-## Without docker
+https://www.loom.com/share/17df8fa04d634ca69cfa04b7b3d2a96b
 
-- Install the dotnet runtime on linux using this command:
-  `sudo apt-get update; \ sudo apt-get install -y apt-transport-https && \ sudo apt-get update && \ sudo apt-get install -y aspnetcore-runtime-5.0`
-  you can find different version of linux and their respective commands here: https://docs.microsoft.com/en-us/dotnet/core/install/linux-ubuntu#install-the-runtime
-- After cloning the repository go inside this path `/source/service` and run below command
-  `dotnet run`
-  you will see the project is running and it will show you the base url with port number where api's is running something like this: `https://localhost:5001`
-
-## With docker
-
-- In this path `/source/service` you will see the docker file which you can use to build the image and run the project.
-- You can also refer to this url on how to build and run a docker image https://docs.docker.com/engine/examples/dotnetcore/#build-and-run-the-docker-image
-
-## Helm
-
-Read [here](chart/README.md)
-
-# Video demo:
-
-- https://www.loom.com/share/17df8fa04d634ca69cfa04b7b3d2a96b
-
-# Docker image
-
-## Build
-
-From the root of the repo:
-
-```shell
-docker build -t sow-rest-api --file Source/Service/Dockerfile .
-```
-
-## Run
-
-```shell
-docker run -it --rm -p 80:80 sow-rest-api
-```
