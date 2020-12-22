@@ -23,6 +23,7 @@
         Rtf = 28,
         Bmp = 29,
         Tiff = 30,
+        Zip = 256,
         // Pe = 31,
         // Macho = 32,
         //Elf = 33,
