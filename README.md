@@ -1,6 +1,6 @@
 # K8 Rebuild REST API
 ## Setup
-![k8-rebuild-api-workflow](imgs/Workflow2.png)
+![k8-rebuild-api-workflow](imgs/k8_rebuild_rest_api_sequence_diagram.png)
 - clone the repo    
     `git clone https://github.com/k8-proxy/k8-rebuild-rest-api.git`
 - update modules    
