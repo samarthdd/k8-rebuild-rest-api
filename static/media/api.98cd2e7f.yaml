@@ -14,92 +14,10 @@ info:
   description: These are HTTP endpoints that rebuild files with the Glasswall d-FIRST™ Engine.
   version: 0.1.9
 servers:
-  - url: https://gzlhbtpvk2.execute-api.eu-west-1.amazonaws.com/Prod
+  - url: https://3.249.245.10/
     description: eu-west-1
 paths:
-  /api/rebuild:
-    post:
-      summary: Rebuilds a file located at a specified URL and outputs the rebuilt file to another specified URL
-      description: This endpoint accepts requests to rebuild a file with Glasswall d-FIRST™ Engine. The request body contains the Base64 representation of the file and Glasswall Content Management Flags with a 'Content-Type' of 'application/json'. A Base64 Representation of the rebuilt file is then returned in the response with a 'Content-Type' of 'text/plain'.
-      requestBody:
-        content:
-          "application/json":
-            schema:
-              type: object
-              required:
-                - InputGetUrl
-                - OutputPutUrl
-              properties:
-                InputGetUrl:
-                  type: string
-                  description: This URL will be used in a HTTP GET operation to download the file to be rebuilt
-                OutputPutUrl:
-                  type: string
-                  description: This URL will be used upon successful rebuilding of a file in a HTTP PUT operation. The ETAG of the PUT file will be returned in the headers (See responses)
-                ContentManagementFlags:
-                  $ref: '#/Models/ContentManagementPolicy'
-            encoding:
-              file:
-                style: form
-      responses:
-        200:    # status code
-          description: OK - The requested file was successfully processed by the Glasswall d-FIRST™ Engine
-          headers:
-            gw-metric-detect:
-              description: A header containing the time it took to detect the file type.
-              schema:
-                type: string
-            gw-metric-filesize:
-              description: A header containing a record of the size of the file uploaded
-              schema:
-                type: string
-            gw-version:
-              description: A header containing the version of the Glasswall d-FIRST™ Engine installed on the server
-              schema:
-                type: string
-            gw-metric-rebuild:
-              description: A header containing the time it took to rebuild the input file.
-              schema:
-                type: string
-            gw-metric-download:
-              description: A header containing the time it took to download the input file
-              schema:
-                type: string
-            gw-metric-upload:
-              description: A header containing the time it took to upload the rebuilt file
-              schema:
-                type: string
-            gw-metric-uploadsize:
-              description: A header containing the size of the rebuilt file
-              schema:
-                type: string
-            gw-put-file-etag:
-              description: A header containing the etag of the output file. 
-              schema:
-                type: string
-        400:
-          description: Bad Request - This is usually when the JSON input is malformed or missing parameters
-          content:
-            application/json:
-              schema:
-                type: object
-                properties:
-                  InputGetUrl:
-                    type: array
-                    description: "Error relating to the input"
-                    items:
-                      type: string
-                  OutputPutUrl:
-                    type: array
-                    description: "Error relating to the input"
-                    items:
-                      type: string
-        403:
-          $ref: '#/responses/Forbidden' 
-        415:
-          $ref: '#/responses/UnsupportedMediaType' 
-        422:
-          $ref: '#/responses/UnprocessableEntity' 
+
   /api/rebuild/file:
     post:
       summary: Rebuilds a file using its binary data
@@ -283,6 +201,18 @@ paths:
           $ref: '#/responses/UnsupportedMediaType' 
         422:
           $ref: '#/responses/UnprocessableEntity' 
+
+  /api/rebuild/zipfile:
+    post:
+      summary: Processes a zip uploaded by the user, returns a zip file with rebuilt files
+  /api/rebuild/s3tozip:
+    post:
+      summary: Processes a zip file retrieved from s3, returns a zip file with rebuilt files
+  /api/rebuild/s3tos3:
+    post:
+      summary: Processes a zip file retrieved from s3, uploads created zip to target s3 bucket
+
+
 responses:
   Forbidden:
     description: Forbidden - This typically occurs when the JWT Token is not supplied, or it is incorrect.
