@@ -19,6 +19,8 @@ namespace Glasswall.Core.Engine.Common
         public xlsConfig xlsConfig { get; set; }
         [DataMember]
         public wordConfig wordConfig { get; set; }
+        [DataMember]
+        public tiffConfig tiffConfig { get; set; }
     }
 
     [ExcludeFromCodeCoverage]
@@ -130,5 +132,13 @@ namespace Glasswall.Core.Engine.Common
         allow,
         [EnumMember]
         sanitise
+    }
+
+    [ExcludeFromCodeCoverage]
+    [DataContract(Namespace = "")]
+    public class tiffConfig
+    {
+        [DataMember]
+        public contentManagementFlag geotiff { get; set; }
     }
 }

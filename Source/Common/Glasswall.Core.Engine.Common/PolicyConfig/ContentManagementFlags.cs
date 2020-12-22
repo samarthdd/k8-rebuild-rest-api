@@ -9,5 +9,6 @@ namespace Glasswall.Core.Engine.Common.PolicyConfig
         public ExcelContentManagement ExcelContentManagement { get; set; }
         public PowerPointContentManagement PowerPointContentManagement { get; set; }
         public WordContentManagement WordContentManagement { get; set; }
+        public TiffContentManagement TiffContentManagement { get; set; }
     }
 }

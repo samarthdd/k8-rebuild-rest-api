@@ -48,6 +48,10 @@ namespace Glasswall.Core.Engine.Common
                 Acroform = ContentManagementFlagAction.Sanitise,
                 ActionsAll = ContentManagementFlagAction.Sanitise,
                 Javascript = ContentManagementFlagAction.Sanitise
+            },
+            TiffContentManagement = new TiffContentManagement
+            {
+                Geotiff = ContentManagementFlagAction.Allow
             }
         };
     }

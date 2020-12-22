@@ -84,6 +84,11 @@ namespace Glasswall.Core.Engine
                     metadata = contentManagementFlags.WordContentManagement.Metadata.GetValueOrDefault().ToGlasswallConfigurationContentManagementFlag(),
                     review_comments = contentManagementFlags.WordContentManagement.ReviewComments.GetValueOrDefault().ToGlasswallConfigurationContentManagementFlag(),
                     dynamic_data_exchange = contentManagementFlags.WordContentManagement.DynamicDataExchange.GetValueOrDefault().ToGlasswallConfigurationContentManagementFlag()
+                },
+                tiffConfig = new tiffConfig
+                {
+                    geotiff = contentManagementFlags.TiffContentManagement.Geotiff.GetValueOrDefault().ToGlasswallConfigurationContentManagementFlag()
+
                 }
             };
         }
