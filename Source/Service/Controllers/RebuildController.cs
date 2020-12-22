@@ -310,7 +310,7 @@ namespace Glasswall.CloudSdk.AWS.Rebuild.Controllers
 
             try
             {
-                Logger.LogInformation("'{0}' method invoked", nameof(RebuildFromFormS3ToZipFile));
+                Logger.LogInformation("'{0}' method invoked", nameof(RebuildFromFormS3ToS3));
 
                 ContentManagementFlags contentManagementFlags = null;
                 if (!string.IsNullOrWhiteSpace(contentManagementFlagJson))
