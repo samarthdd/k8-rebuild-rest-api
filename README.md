@@ -1,5 +1,6 @@
 # K8 Rebuild REST API
 ## Setup
+![k8-rebuild-api-workflow](imgs/Workflow2.png)
 - clone the repo    
     `git clone https://github.com/k8-proxy/k8-rebuild-rest-api.git`
 - update modules    
@@ -61,6 +62,10 @@ There are 2 ways to deploy K8 Rebuild Rest API; docker and runtime. Below are in
 ## Helm Chart
 You can see the helm chart [here](https://github.com/k8-proxy/k8-rebuild-rest-api/blob/main/chart/README.md).
 
+## Use Cases
+- Process images that are retrieved from un-trusted sources
+- Ability to use zip files in S3 buckets to provide the files needed to be rebuild
+- Detect when files get dropped > get the file > unzip it > put all the files thought the Glasswall engine > capture all rebuilt files in one folder > capture all xml files in another folder > zip both folders > upload zip files to another S3 location
 
 # Video Demo
 
