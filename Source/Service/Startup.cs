@@ -1,6 +1,7 @@
 using System;
 using System.Diagnostics.CodeAnalysis;
 using Glasswall.CloudSdk.AWS.Common.Web;
+using Glasswall.CloudSdk.AWS.Rebuild.Services;
 using Glasswall.CloudSdk.Common;
 using Glasswall.Core.Engine;
 using Glasswall.Core.Engine.Common;
@@ -31,6 +32,7 @@ namespace Glasswall.CloudSdk.AWS.Rebuild
             services.AddSingleton<IFileAnalyser, FileAnalyser>();
             services.AddSingleton<IAdaptor<ContentManagementFlags, string>, GlasswallConfigurationAdaptor>();
             services.AddSingleton<IHttpContextAccessor, HttpContextAccessor>();
+            services.AddSingleton<IZipUtility, ZipUtility>();
 
             var p = (int)Environment.OSVersion.Platform;
 
