@@ -1,5 +1,6 @@
 ﻿using System;
 using Glasswall.CloudSdk.AWS.Rebuild.Controllers;
+using Glasswall.CloudSdk.AWS.Rebuild.Services;
 using Glasswall.CloudSdk.Common;
 using Glasswall.Core.Engine.Common.FileProcessing;
 using Microsoft.AspNetCore.Hosting;
@@ -21,7 +22,8 @@ namespace Glasswall.CloudSdk.AWS.Rebuild.Tests.RebuildControllerTests.Signature
                 Mock.Of<IFileProtector>(),
                 Mock.Of<IMetricService>(),
                 Mock.Of<ILogger<RebuildController>>(),
-                Mock.Of<IWebHostEnvironment>());
+                Mock.Of<IWebHostEnvironment>(),
+                Mock.Of<IZipUtility>());
 
             Assert.That(controller, Is.Not.Null);
         }
@@ -35,7 +37,8 @@ namespace Glasswall.CloudSdk.AWS.Rebuild.Tests.RebuildControllerTests.Signature
                     Mock.Of<IFileProtector>(),
                     Mock.Of<IMetricService>(),
                     Mock.Of<ILogger<RebuildController>>(),
-                    Mock.Of<IWebHostEnvironment>()),
+                    Mock.Of<IWebHostEnvironment>(),
+                    Mock.Of<IZipUtility>()),
                 Throws.ArgumentNullException.With.Property(nameof(ArgumentNullException.ParamName))
                     .EqualTo("glasswallVersionService"));
         }
@@ -49,7 +52,8 @@ namespace Glasswall.CloudSdk.AWS.Rebuild.Tests.RebuildControllerTests.Signature
                     Mock.Of<IFileProtector>(),
                     Mock.Of<IMetricService>(),
                     Mock.Of<ILogger<RebuildController>>(),
-                    Mock.Of<IWebHostEnvironment>()),
+                    Mock.Of<IWebHostEnvironment>(),
+                    Mock.Of<IZipUtility>()),
                 Throws.ArgumentNullException.With.Property(nameof(ArgumentNullException.ParamName))
                     .EqualTo("fileTypeDetector"));
         }
@@ -63,7 +67,8 @@ namespace Glasswall.CloudSdk.AWS.Rebuild.Tests.RebuildControllerTests.Signature
                     null,
                     Mock.Of<IMetricService>(),
                     Mock.Of<ILogger<RebuildController>>(),
-                    Mock.Of<IWebHostEnvironment>()),
+                    Mock.Of<IWebHostEnvironment>(),
+                    Mock.Of<IZipUtility>()),
                 Throws.ArgumentNullException.With.Property(nameof(ArgumentNullException.ParamName))
                     .EqualTo("fileProtector"));
         }
@@ -77,7 +82,8 @@ namespace Glasswall.CloudSdk.AWS.Rebuild.Tests.RebuildControllerTests.Signature
                     Mock.Of<IFileProtector>(),
                     null,
                     Mock.Of<ILogger<RebuildController>>(),
-                    Mock.Of<IWebHostEnvironment>()),
+                    Mock.Of<IWebHostEnvironment>(),
+                    Mock.Of<IZipUtility>()),
                 Throws.ArgumentNullException.With.Property(nameof(ArgumentNullException.ParamName))
                     .EqualTo("metricService"));
         }
@@ -91,7 +97,8 @@ namespace Glasswall.CloudSdk.AWS.Rebuild.Tests.RebuildControllerTests.Signature
                     Mock.Of<IFileProtector>(),
                     Mock.Of<IMetricService>(),
                     null,
-                    Mock.Of<IWebHostEnvironment>()),
+                    Mock.Of<IWebHostEnvironment>(),
+                    Mock.Of<IZipUtility>()),
                 Throws.ArgumentNullException.With.Property(nameof(ArgumentNullException.ParamName))
                     .EqualTo("logger"));
         }
