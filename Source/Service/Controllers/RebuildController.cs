@@ -1,7 +1,12 @@
 using System;
 using System.ComponentModel.DataAnnotations;
 using System.IO;
+using System.Linq;
+using System.Runtime.Serialization.Json;
+using System.Text;
 using System.Threading.Tasks;
+using System.Xml;
+using System.Xml.Linq;
 using Amazon;
 using Amazon.S3;
 using Amazon.S3.Model;
@@ -13,12 +18,11 @@ using Glasswall.CloudSdk.Common.Web.Models;
 using Glasswall.Core.Engine.Common.FileProcessing;
 using Glasswall.Core.Engine.Common.PolicyConfig;
 using Glasswall.Core.Engine.Messaging;
-using ICSharpCode.SharpZipLib.Core;
-using ICSharpCode.SharpZipLib.Zip;
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.Logging;
+using Newtonsoft.Json;
 
 namespace Glasswall.CloudSdk.AWS.Rebuild.Controllers
 {
@@ -450,6 +454,47 @@ namespace Glasswall.CloudSdk.AWS.Rebuild.Controllers
             }
         }
 
+        [HttpPost("jsontoxml")]
+        public async Task<IActionResult> JsonToXml([FromForm][Required] IFormFile file)
+        {
+            Logger.LogInformation("'{0}' method invoked", nameof(JsonToXml));
+
+            if (!ModelState.IsValid)
+                return BadRequest(ModelState);
+
+            if (!TryReadFormFile(file, out var fileBytes))
+                return BadRequest("Input file could not be read.");
+
+            RecordEngineVersion();
+
+            string fileExt = Path.GetExtension(file.FileName);
+            if (fileExt?.ToLower() != ".json")
+            {
+                return UnprocessableEntity("File could not be determined to be a JSON file");
+            }
+
+            try
+            {
+                XDocument xDocument = null;
+                using (var stream = new MemoryStream(fileBytes))
+                {
+                    var quotas = new XmlDictionaryReaderQuotas();
+                    xDocument = XDocument.Load(JsonReaderWriterFactory.CreateJsonReader(stream, quotas));
+                }
+
+                byte[] bytes = Encoding.Default.GetBytes(RemoveAllNamespaces(xDocument.Root).ToString());
+                return new FileContentResult(bytes, "application/octet-stream")
+                {
+                    FileDownloadName = !string.IsNullOrWhiteSpace(file.FileName) ? $"{file.FileName.Substring(0, file.FileName.IndexOf(fileExt))}.xml" : "Unknown.xml"
+                };
+            }
+            catch (Exception ex)
+            {
+                Logger.LogError(ex, $"Exception occured processing file: {ex.Message}");
+                throw;
+            }
+        }
+
         [HttpPost("base64")]
         public async Task<IActionResult> RebuildFromBase64([FromBody][Required]Base64Request request)
         {
@@ -616,6 +661,17 @@ namespace Glasswall.CloudSdk.AWS.Rebuild.Controllers
 
             System.IO.File.WriteAllBytes(Path.Combine(protectedZipFolderPath, Path.GetFileName(extractedFile)), protectedFileResponse.ProtectedFile);
             return null;
+        }
+
+        private XElement RemoveAllNamespaces(XElement xmlDocument)
+        {
+            if (!xmlDocument.HasElements)
+            {
+                XElement xElement = new XElement(xmlDocument.Name.LocalName);
+                xElement.Value = xmlDocument.Value;
+                return xElement;
+            }
+            return new XElement(xmlDocument.Name.LocalName, xmlDocument.Elements().Select(el => RemoveAllNamespaces(el)));
         }
     }
 }
