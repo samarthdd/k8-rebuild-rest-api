@@ -26,6 +26,8 @@ There are 2 ways to deploy K8 Rebuild Rest API; docker and runtime. Below are in
 ### Docker Deployment
 - Change your directory     
     `cd k8-rebuild-rest-api`
+- Update the `libs` submodule to the latest commit from `master` branch. Everytime the evaluation license expires, the submodule should be updated.
+    `git submodule foreach git pull origin master`
 - Build and run the docker image
     ```
     docker build -t sow-rest-api --file Source/Service/Dockerfile .
