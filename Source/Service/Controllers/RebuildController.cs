@@ -192,7 +192,6 @@ namespace Glasswall.CloudSdk.AWS.Rebuild.Controllers
         {
             string uploads = Path.Combine(_hostingEnvironment.ContentRootPath, Constants.UPLOADS_FOLDER);
             string tempFolderPath = Path.Combine(uploads, Guid.NewGuid().ToString());
-
             try
             {
                 Logger.LogInformation("'{0}' method invoked", nameof(RebuildFromFormS3ToZipFile));
