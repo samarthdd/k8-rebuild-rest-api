@@ -1,4 +1,5 @@
 using System;
+using System.Collections.Generic;
 using System.ComponentModel.DataAnnotations;
 using System.IO;
 using System.Linq;
@@ -11,6 +12,7 @@ using Amazon;
 using Amazon.S3;
 using Amazon.S3.Model;
 using Amazon.S3.Util;
+using Glasswall.CloudSdk.AWS.Rebuild.Models;
 using Glasswall.CloudSdk.AWS.Rebuild.Services;
 using Glasswall.CloudSdk.Common;
 using Glasswall.CloudSdk.Common.Web.Abstraction;
@@ -51,7 +53,7 @@ namespace Glasswall.CloudSdk.AWS.Rebuild.Controllers
         }
 
         [HttpPost("file")]
-        public async Task<IActionResult> RebuildFromFormFile([FromForm]string contentManagementFlagJson, [FromForm][Required]IFormFile file)
+        public async Task<IActionResult> RebuildFromFormFile([FromForm] string contentManagementFlagJson, [FromForm][Required] IFormFile file)
         {
             try
             {
@@ -59,23 +61,23 @@ namespace Glasswall.CloudSdk.AWS.Rebuild.Controllers
 
                 ContentManagementFlags contentManagementFlags = null;
                 if (!string.IsNullOrWhiteSpace(contentManagementFlagJson))
-                    contentManagementFlags = await Task.Run(() => Newtonsoft.Json.JsonConvert.DeserializeObject<ContentManagementFlags>(contentManagementFlagJson));
+                    contentManagementFlags = await Task.Run(() => JsonConvert.DeserializeObject<ContentManagementFlags>(contentManagementFlagJson));
 
                 if (!ModelState.IsValid)
                     return BadRequest(ModelState);
 
-                if (!TryReadFormFile(file, out var fileBytes))
+                if (!TryReadFormFile(file, out byte[] fileBytes))
                     return BadRequest("Input file could not be read.");
 
                 RecordEngineVersion();
 
-                var fileType = await Task.Run(() => DetectFromBytes(fileBytes));
+                FileTypeDetectionResponse fileType = await Task.Run(() => DetectFromBytes(fileBytes));
 
                 if (fileType.FileType == FileType.Unknown)
                     return UnprocessableEntity("File could not be determined to be a supported file");
 
-                var protectedFileResponse = await Task.Run(() => RebuildFromBytes(
-                    contentManagementFlags, fileType.FileTypeName, fileBytes)); 
+                IFileProtectResponse protectedFileResponse = await Task.Run(() => RebuildFromBytes(
+                    contentManagementFlags, fileType.FileTypeName, fileBytes));
 
                 if (!string.IsNullOrWhiteSpace(protectedFileResponse.ErrorMessage))
                 {
@@ -107,12 +109,12 @@ namespace Glasswall.CloudSdk.AWS.Rebuild.Controllers
 
                 ContentManagementFlags contentManagementFlags = null;
                 if (!string.IsNullOrWhiteSpace(contentManagementFlagJson))
-                    contentManagementFlags = await Task.Run(() => Newtonsoft.Json.JsonConvert.DeserializeObject<ContentManagementFlags>(contentManagementFlagJson));
+                    contentManagementFlags = await Task.Run(() => JsonConvert.DeserializeObject<ContentManagementFlags>(contentManagementFlagJson));
 
                 if (!ModelState.IsValid)
                     return BadRequest(ModelState);
 
-                if (!TryReadFormFile(file, out var fileBytes))
+                if (!TryReadFormFile(file, out byte[] fileBytes))
                     return BadRequest("Input file could not be read.");
 
                 RecordEngineVersion();
@@ -147,9 +149,27 @@ namespace Glasswall.CloudSdk.AWS.Rebuild.Controllers
                 }
 
                 _zipUtility.ExtractZipFile(zipFilePath, null, zipFolderPath);
-                var processDirectoryResp = await ProcessDirectory(zipFolderPath, protectedZipFolderPath, contentManagementFlags);
-                if (processDirectoryResp != null)
-                    return processDirectoryResp;
+                List<IFileProtectResponse> processDirectoryResp = await ProcessDirectory(zipFolderPath, protectedZipFolderPath, contentManagementFlags);
+                string statusMessage = string.Empty;
+                processDirectoryResp.Cast<IFileProcessStatus>().ToList().ForEach(x =>
+                {
+                    if (!string.IsNullOrWhiteSpace(x.ErrorMessage) && !x.IsDisallowed)
+                    {
+                        statusMessage += $"An error {x.ErrorMessage} occurred while processing the file {x.FileName}{Environment.NewLine}";
+                    }
+                    else
+                    {
+                        statusMessage += $"File {x.FileName} is successfully processed.{Environment.NewLine}";
+                    }
+
+                    using StreamWriter sw = System.IO.File.CreateText(Path.Combine(protectedZipFolderPath, Constants.STATUS_FILE));
+                    sw.WriteLine(statusMessage);
+                });
+
+                if (processDirectoryResp.All(x => !string.IsNullOrEmpty(x.ErrorMessage) && !x.IsDisallowed))
+                {
+                    return BadRequest("Input file could not be read.");
+                }
 
                 _zipUtility.CreateZipFile($"{protectedZipFolderPath}.{FileType.Zip}", null, protectedZipFolderPath);
                 byte[] protectedZipBytes = System.IO.File.ReadAllBytes($"{protectedZipFolderPath}.{FileType.Zip}");
@@ -179,7 +199,7 @@ namespace Glasswall.CloudSdk.AWS.Rebuild.Controllers
 
                 ContentManagementFlags contentManagementFlags = null;
                 if (!string.IsNullOrWhiteSpace(contentManagementFlagJson))
-                    contentManagementFlags = await Task.Run(() => Newtonsoft.Json.JsonConvert.DeserializeObject<ContentManagementFlags>(contentManagementFlagJson));
+                    contentManagementFlags = await Task.Run(() => JsonConvert.DeserializeObject<ContentManagementFlags>(contentManagementFlagJson));
 
                 if (!ModelState.IsValid)
                     return BadRequest(ModelState);
@@ -201,7 +221,7 @@ namespace Glasswall.CloudSdk.AWS.Rebuild.Controllers
                 s3objectResponse.ResponseStream.CopyTo(memStream);
                 memStream.Seek(0, SeekOrigin.Begin);
                 IFormFile file = new FormFile(memStream, 0, memStream.Length, null, Path.GetFileName(amazonS3Uri.Key));
-                if (!TryReadFormFile(file, out var fileBytes))
+                if (!TryReadFormFile(file, out byte[] fileBytes))
                     return BadRequest("Input file could not be read.");
 
                 RecordEngineVersion();
@@ -236,9 +256,27 @@ namespace Glasswall.CloudSdk.AWS.Rebuild.Controllers
                 }
 
                 _zipUtility.ExtractZipFile(zipFilePath, null, zipFolderPath);
-                var processDirectoryResp = await ProcessDirectory(zipFolderPath, protectedZipFolderPath, contentManagementFlags);
-                if (processDirectoryResp != null)
-                    return processDirectoryResp;
+                List<IFileProtectResponse> processDirectoryResp = await ProcessDirectory(zipFolderPath, protectedZipFolderPath, contentManagementFlags);
+                string statusMessage = string.Empty;
+                processDirectoryResp.Cast<IFileProcessStatus>().ToList().ForEach(x =>
+                {
+                    if (!string.IsNullOrWhiteSpace(x.ErrorMessage) && !x.IsDisallowed)
+                    {
+                        statusMessage += $"An error {x.ErrorMessage} occurred while processing the file {x.FileName}{Environment.NewLine}";
+                    }
+                    else
+                    {
+                        statusMessage += $"File {x.FileName} is successfully processed.{Environment.NewLine}";
+                    }
+
+                    using StreamWriter sw = System.IO.File.CreateText(Path.Combine(protectedZipFolderPath, Constants.STATUS_FILE));
+                    sw.WriteLine(statusMessage);
+                });
+
+                if (processDirectoryResp.All(x => !string.IsNullOrEmpty(x.ErrorMessage) && !x.IsDisallowed))
+                {
+                    return BadRequest("Input file could not be read.");
+                }
 
                 _zipUtility.CreateZipFile($"{protectedZipFolderPath}.{FileType.Zip}", null, protectedZipFolderPath);
                 byte[] protectedZipBytes = System.IO.File.ReadAllBytes($"{protectedZipFolderPath}.{FileType.Zip}");
@@ -269,7 +307,7 @@ namespace Glasswall.CloudSdk.AWS.Rebuild.Controllers
 
                 ContentManagementFlags contentManagementFlags = null;
                 if (!string.IsNullOrWhiteSpace(contentManagementFlagJson))
-                    contentManagementFlags = await Task.Run(() => Newtonsoft.Json.JsonConvert.DeserializeObject<ContentManagementFlags>(contentManagementFlagJson));
+                    contentManagementFlags = await Task.Run(() => JsonConvert.DeserializeObject<ContentManagementFlags>(contentManagementFlagJson));
 
                 if (!ModelState.IsValid)
                     return BadRequest(ModelState);
@@ -290,7 +328,7 @@ namespace Glasswall.CloudSdk.AWS.Rebuild.Controllers
                 s3objectResponse.ResponseStream.CopyTo(memStream);
                 memStream.Seek(0, SeekOrigin.Begin);
                 IFormFile file = new FormFile(memStream, 0, memStream.Length, null, Path.GetFileName(amazonS3Uri.Key));
-                if (!TryReadFormFile(file, out var fileBytes))
+                if (!TryReadFormFile(file, out byte[] fileBytes))
                     return BadRequest("Input file could not be read.");
 
                 RecordEngineVersion();
@@ -325,9 +363,27 @@ namespace Glasswall.CloudSdk.AWS.Rebuild.Controllers
                 }
 
                 _zipUtility.ExtractZipFile(zipFilePath, null, zipFolderPath);
-                var processDirectoryResp = await ProcessDirectory(zipFolderPath, protectedZipFolderPath, contentManagementFlags);
-                if (processDirectoryResp != null)
-                    return processDirectoryResp;
+                List<IFileProtectResponse> processDirectoryResp = await ProcessDirectory(zipFolderPath, protectedZipFolderPath, contentManagementFlags);
+                string statusMessage = string.Empty;
+                processDirectoryResp.Cast<IFileProcessStatus>().ToList().ForEach(x =>
+                {
+                    if (!string.IsNullOrWhiteSpace(x.ErrorMessage) && !x.IsDisallowed)
+                    {
+                        statusMessage += $"An error {x.ErrorMessage} occurred while processing the file {x.FileName}{Environment.NewLine}";
+                    }
+                    else
+                    {
+                        statusMessage += $"File {x.FileName} is successfully processed.{Environment.NewLine}";
+                    }
+
+                    using StreamWriter sw = System.IO.File.CreateText(Path.Combine(protectedZipFolderPath, Constants.STATUS_FILE));
+                    sw.WriteLine(statusMessage);
+                });
+
+                if (processDirectoryResp.All(x => !string.IsNullOrEmpty(x.ErrorMessage) && !x.IsDisallowed))
+                {
+                    return BadRequest("Input file could not be read.");
+                }
 
                 _zipUtility.CreateZipFile($"{protectedZipFolderPath}.{FileType.Zip}", null, protectedZipFolderPath);
                 using (Stream fs = System.IO.File.OpenRead($"{protectedZipFolderPath}.{FileType.Zip}"))
@@ -374,12 +430,12 @@ namespace Glasswall.CloudSdk.AWS.Rebuild.Controllers
 
                 ContentManagementFlags contentManagementFlags = null;
                 if (!string.IsNullOrWhiteSpace(contentManagementFlagJson))
-                    contentManagementFlags = await Task.Run(() => Newtonsoft.Json.JsonConvert.DeserializeObject<ContentManagementFlags>(contentManagementFlagJson));
+                    contentManagementFlags = await Task.Run(() => JsonConvert.DeserializeObject<ContentManagementFlags>(contentManagementFlagJson));
 
                 if (!ModelState.IsValid)
                     return BadRequest(ModelState);
 
-                if (!TryReadFormFile(file, out var fileBytes))
+                if (!TryReadFormFile(file, out byte[] fileBytes))
                     return BadRequest("Input file could not be read.");
 
                 RecordEngineVersion();
@@ -414,9 +470,27 @@ namespace Glasswall.CloudSdk.AWS.Rebuild.Controllers
                 }
 
                 _zipUtility.ExtractZipFile(zipFilePath, null, zipFolderPath);
-                var processDirectoryResp = await ProcessDirectory(zipFolderPath, protectedZipFolderPath, contentManagementFlags);
-                if (processDirectoryResp != null)
-                    return processDirectoryResp;
+                List<IFileProtectResponse> processDirectoryResp = await ProcessDirectory(zipFolderPath, protectedZipFolderPath, contentManagementFlags);
+                string statusMessage = string.Empty;
+                processDirectoryResp.Cast<IFileProcessStatus>().ToList().ForEach(x =>
+                {
+                    if (!string.IsNullOrWhiteSpace(x.ErrorMessage) && !x.IsDisallowed)
+                    {
+                        statusMessage += $"An error {x.ErrorMessage} occurred while processing the file {x.FileName}{Environment.NewLine}";
+                    }
+                    else
+                    {
+                        statusMessage += $"File {x.FileName} is successfully processed.{Environment.NewLine}";
+                    }
+
+                    using StreamWriter sw = System.IO.File.CreateText(Path.Combine(protectedZipFolderPath, Constants.STATUS_FILE));
+                    sw.WriteLine(statusMessage);
+                });
+
+                if (processDirectoryResp.All(x => !string.IsNullOrEmpty(x.ErrorMessage) && !x.IsDisallowed))
+                {
+                    return BadRequest("Input file could not be read.");
+                }
 
                 _zipUtility.CreateZipFile($"{protectedZipFolderPath}.{FileType.Zip}", null, protectedZipFolderPath);
                 AmazonS3Client amazonS3Client = new AmazonS3Client(Environment.GetEnvironmentVariable(Constants.EnvironmentVariables.AWS_ACCESS_KEY_ID),
@@ -462,10 +536,15 @@ namespace Glasswall.CloudSdk.AWS.Rebuild.Controllers
             if (!ModelState.IsValid)
                 return BadRequest(ModelState);
 
-            if (!TryReadFormFile(file, out var fileBytes))
+            if (!TryReadFormFile(file, out byte[] fileBytes))
                 return BadRequest("Input file could not be read.");
 
             RecordEngineVersion();
+
+            FileTypeDetectionResponse fileType = await Task.Run(() => DetectFromBytes(fileBytes));
+
+            if (fileType.FileType == FileType.Unknown)
+                return UnprocessableEntity("Input file could not be processed.");
 
             string fileExt = Path.GetExtension(file.FileName);
             if (fileExt?.ToLower() != ".json")
@@ -476,9 +555,9 @@ namespace Glasswall.CloudSdk.AWS.Rebuild.Controllers
             try
             {
                 XDocument xDocument = null;
-                using (var stream = new MemoryStream(fileBytes))
+                using (MemoryStream stream = new MemoryStream(fileBytes))
                 {
-                    var quotas = new XmlDictionaryReaderQuotas();
+                    XmlDictionaryReaderQuotas quotas = new XmlDictionaryReaderQuotas();
                     xDocument = XDocument.Load(JsonReaderWriterFactory.CreateJsonReader(stream, quotas));
                 }
 
@@ -496,26 +575,26 @@ namespace Glasswall.CloudSdk.AWS.Rebuild.Controllers
         }
 
         [HttpPost("base64")]
-        public async Task<IActionResult> RebuildFromBase64([FromBody][Required]Base64Request request)
+        public async Task<IActionResult> RebuildFromBase64([FromBody][Required] Base64Request request)
         {
             try
             {
                 Logger.LogInformation("'{0}' method invoked", nameof(RebuildFromBase64));
 
-                if (!ModelState.IsValid) 
+                if (!ModelState.IsValid)
                     return BadRequest(ModelState);
-                
-                if (!TryGetBase64File(request.Base64, out var file))
+
+                if (!TryGetBase64File(request.Base64, out byte[] file))
                     return BadRequest("Input file could not be decoded from base64.");
 
                 RecordEngineVersion();
 
-                var fileType = await Task.Run(() => DetectFromBytes(file));
+                FileTypeDetectionResponse fileType = await Task.Run(() => DetectFromBytes(file));
 
                 if (fileType.FileType == FileType.Unknown)
                     return UnprocessableEntity("File could not be determined to be a supported file");
 
-                var protectedFileResponse = await Task.Run(() => RebuildFromBytes(
+                IFileProtectResponse protectedFileResponse = await Task.Run(() => RebuildFromBytes(
                     request.ContentManagementFlags, fileType.FileTypeName, file));
 
                 if (!string.IsNullOrWhiteSpace(protectedFileResponse.ErrorMessage))
@@ -535,7 +614,7 @@ namespace Glasswall.CloudSdk.AWS.Rebuild.Controllers
                 throw;
             }
         }
-        
+
         [HttpPost]
         public async Task<IActionResult> RebuildUrlToUrl([FromBody][Required] UrlToUrlRequest request)
         {
@@ -546,17 +625,17 @@ namespace Glasswall.CloudSdk.AWS.Rebuild.Controllers
                 if (!ModelState.IsValid)
                     return BadRequest(ModelState);
 
-                if (!TryGetFile(request.InputGetUrl, out var file))
+                if (!TryGetFile(request.InputGetUrl, out byte[] file))
                     return BadRequest("Input file could not be downloaded.");
 
                 RecordEngineVersion();
 
-                var fileType = await Task.Run(() => DetectFromBytes(file));
+                FileTypeDetectionResponse fileType = await Task.Run(() => DetectFromBytes(file));
 
                 if (fileType.FileType == FileType.Unknown)
                     return UnprocessableEntity("File could not be determined to be a supported file");
 
-                var protectedFileResponse = await Task.Run(() => RebuildFromBytes(
+                IFileProtectResponse protectedFileResponse = await Task.Run(() => RebuildFromBytes(
                     request.ContentManagementFlags, fileType.FileTypeName, file));
 
                 if (!string.IsNullOrWhiteSpace(protectedFileResponse.ErrorMessage))
@@ -582,16 +661,16 @@ namespace Glasswall.CloudSdk.AWS.Rebuild.Controllers
 
         private void RecordEngineVersion()
         {
-            var version = _glasswallVersionService.GetVersion();
+            string version = _glasswallVersionService.GetVersion();
             MetricService.Record(Metric.Version, version);
         }
 
         private FileTypeDetectionResponse DetectFromBytes(byte[] bytes)
         {
             TimeMetricTracker.Restart();
-            var fileTypeResponse = _fileTypeDetector.DetermineFileType(bytes);
+            FileTypeDetectionResponse fileTypeResponse = _fileTypeDetector.DetermineFileType(bytes);
             TimeMetricTracker.Stop();
-            
+
             MetricService.Record(Metric.DetectFileTypeTime, TimeMetricTracker.Elapsed);
             return fileTypeResponse;
         }
@@ -601,23 +680,23 @@ namespace Glasswall.CloudSdk.AWS.Rebuild.Controllers
             contentManagementFlags = contentManagementFlags.ValidatedOrDefault();
 
             TimeMetricTracker.Restart();
-            var response = _fileProtector.GetProtectedFile(contentManagementFlags, fileType, bytes);
+            IFileProtectResponse response = _fileProtector.GetProtectedFile(contentManagementFlags, fileType, bytes);
             TimeMetricTracker.Stop();
 
             MetricService.Record(Metric.RebuildTime, TimeMetricTracker.Elapsed);
             return response;
         }
 
-        private async Task<IActionResult> ProcessDirectory(string zipFolderPath,
+        private async Task<List<IFileProtectResponse>> ProcessDirectory(string zipFolderPath,
                                                            string protectedZipFolderPath,
                                                            ContentManagementFlags contentManagementFlags)
         {
+            List<IFileProtectResponse> responseList = new List<IFileProtectResponse>();
             // Process the list of files found in the directory.
-            foreach (var extractedFile in Directory.GetFiles(zipFolderPath))
+            foreach (string extractedFile in Directory.GetFiles(zipFolderPath))
             {
-                var processFileResp = await ProcessFile(extractedFile, protectedZipFolderPath, contentManagementFlags);
-                if (processFileResp != null)
-                    return processFileResp;
+                IFileProtectResponse processFileResp = await ProcessFile(extractedFile, protectedZipFolderPath, contentManagementFlags);
+                responseList.Add(processFileResp);
             }
 
             // Recurse into subdirectories of this directory.
@@ -626,27 +705,38 @@ namespace Glasswall.CloudSdk.AWS.Rebuild.Controllers
                 if (subdirectory.EndsWith(Constants.MACOSX))
                     continue;
 
-                var processDirectoryResp = await ProcessDirectory(subdirectory, protectedZipFolderPath, contentManagementFlags);
-                if (processDirectoryResp != null)
-                    return processDirectoryResp;
+                List<IFileProtectResponse> processDirectoryResp = await ProcessDirectory(subdirectory, protectedZipFolderPath, contentManagementFlags);
+                responseList.AddRange(processDirectoryResp);
             }
-            return null;
+            return responseList;
         }
 
-        private async Task<IActionResult> ProcessFile(string extractedFile,
+        private async Task<IFileProtectResponse> ProcessFile(string extractedFile,
                                                       string protectedZipFolderPath,
                                                       ContentManagementFlags contentManagementFlags)
         {
             using FileStream stream = System.IO.File.OpenRead(extractedFile);
             IFormFile iFormFile = new FormFile(stream, 0, stream.Length, null, Path.GetFileName(stream.Name));
 
-            if (!TryReadFormFile(iFormFile, out var fileBytes))
-                return BadRequest("Input file could not be read.");
+            string fileName = Path.GetFileName(extractedFile);
+            IFileProcessStatus fileProcessStatus = new FileProcessStatus { FileName = fileName };
+            if (!TryReadFormFile(iFormFile, out byte[] fileBytes))
+            {
+                fileProcessStatus.ErrorMessage = "Input file could not be read.";
+                fileProcessStatus.StatusCode = 400;
+                fileProcessStatus.FileName = fileName;
+                return fileProcessStatus;
+            }
 
             FileTypeDetectionResponse fileType = await Task.Run(() => DetectFromBytes(fileBytes));
 
             if (fileType.FileType == FileType.Unknown)
-                return UnprocessableEntity("Input file could not be processed.");
+            {
+                fileProcessStatus.ErrorMessage = "Input file could not be read.";
+                fileProcessStatus.StatusCode = 400;
+                fileProcessStatus.FileName = fileName;
+                return fileProcessStatus;
+            }
 
             IFileProtectResponse protectedFileResponse = await Task.Run(() => RebuildFromBytes(
             contentManagementFlags, fileType.FileTypeName, fileBytes));
@@ -654,13 +744,23 @@ namespace Glasswall.CloudSdk.AWS.Rebuild.Controllers
             if (!string.IsNullOrWhiteSpace(protectedFileResponse.ErrorMessage))
             {
                 if (protectedFileResponse.IsDisallowed)
-                    return Ok(protectedFileResponse);
+                {
+                    fileProcessStatus.FileName = fileName;
+                    fileProcessStatus.ErrorMessage = protectedFileResponse.ErrorMessage;
+                    fileProcessStatus.IsDisallowed = protectedFileResponse.IsDisallowed;
+                    fileProcessStatus.Outcome = protectedFileResponse.Outcome;
+                    fileProcessStatus.ProtectedFile = protectedFileResponse.ProtectedFile;
+                    return protectedFileResponse;
+                }
 
-                return UnprocessableEntity($"File could not be rebuilt. Error Message: {protectedFileResponse.ErrorMessage}");
+                fileProcessStatus.ErrorMessage = $"File could not be rebuilt. Error Message: {protectedFileResponse.ErrorMessage}";
+                fileProcessStatus.StatusCode = 422;
+                fileProcessStatus.FileName = fileName;
+                return fileProcessStatus;
             }
 
             System.IO.File.WriteAllBytes(Path.Combine(protectedZipFolderPath, Path.GetFileName(extractedFile)), protectedFileResponse.ProtectedFile);
-            return null;
+            return fileProcessStatus;
         }
 
         private XElement RemoveAllNamespaces(XElement xmlDocument)

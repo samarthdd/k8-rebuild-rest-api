@@ -4,6 +4,7 @@
     {
         public const string MACOSX = "__MACOSX";
         public const string UPLOADS_FOLDER = "uploads";
+        public const string STATUS_FILE = "GlasswallFileProcessingStatus.txt";
 
         public static class EnvironmentVariables
         {
