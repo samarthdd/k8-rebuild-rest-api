@@ -1,0 +1,14 @@
+This script makes curl requests to the following endpoints:
+
+1- /api/rebuild
+2- /api/rebuild/file
+3- /api/rebuild/base64
+4- /api/rebuild/zipfile
+5- /api/rebuild/s3tozip
+6- /api/rebuild/s3tos3
+7- /api/rebuild/ziptos3
+
+and tells if each of them works fine.
+
+note: Each endpoint requires different variables to be tested. Example values of theses variables are provided in the script but you should modify them as convenient.
+ 
