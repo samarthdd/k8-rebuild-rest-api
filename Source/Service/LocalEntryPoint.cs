@@ -18,6 +18,11 @@ namespace Glasswall.CloudSdk.AWS.Rebuild
         public static IWebHost BuildWebHost(string[] args) =>
             WebHost.CreateDefaultBuilder(args)
                 .UseStartup<Startup>()
+                .UseKestrel(options =>
+                {
+                    Microsoft.AspNetCore.Server.Kestrel.Core.KestrelServerLimits limits = options.Limits;
+                    limits.MaxRequestBodySize = long.MaxValue;
+                })
                 .Build();
     }
 }
